@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Character, Planet
+from models import db, User, Character, Planet, Favorite
 #from models import Person
 
 app = Flask(__name__)
@@ -47,6 +47,7 @@ def handle_hello():
 
     return jsonify(response_body), 200
 
+
 @app.route('/characters', methods=['GET'])
 def get_characters():
     characters_query = Character.query.all()
@@ -57,6 +58,7 @@ def get_characters():
     }
 
     return jsonify(response_body), 200
+
 
 @app.route('/characters/<int:characters_id>', methods=['GET'])
 def get_one_characters(characters_id):
@@ -81,6 +83,7 @@ def get_planets():
 
     return jsonify(response_body), 200
 
+
 @app.route('/planets/<int:planets_id>', methods=['GET'])
 def get_one_planets(planets_id):
     planet_query = Planet.query.filter_by(id=planets_id).first()
@@ -88,6 +91,92 @@ def get_one_planets(planets_id):
     response_body = {
         "msg": "OK", 
         "results": planet_query.serialize()
+    }
+
+    return jsonify(response_body), 200
+
+
+@app.route('/users', methods=['GET'])
+def get_all_users():
+
+    users_query = User.query.all()
+    results = list(map(lambda item: item.serialize(), users_query))
+
+    response_body = {
+       "results": results
+    }
+
+    return jsonify(response_body), 200
+
+
+@app.route('/users/<int:user_id>/favoritos', methods=['GET'])
+def get_favoritos(user_id):
+
+    favorito_query = Favorite.query.filter_by(id=user_id).first()
+    
+    response_body = {
+       "results": favorito_query.serialize()
+    }
+
+    return jsonify(response_body), 200
+
+
+@app.route('/users/<int:user_id>/favoritos/', methods=['POST'])
+def add_favorito(user_id):
+
+    request_body = request.get_json(force=True)
+
+    favorito = Favorite(characters_id= request_body['characters_id'],
+                        planets_id= request_body['planets_id'],
+                        user_id= user_id)
+
+    db.session.add(favorito)
+    db.session.commit()
+
+    response_body = {
+        'msg':'ok',
+        "results": ['Favorito Created', favorito.serialize()]
+    }
+
+    return jsonify(response_body), 200
+
+
+@app.route('/users', methods=['POST'])
+def create_user():
+
+    request_body = request.get_json(force=True)
+
+    user = User(email=request_body['email'],
+                password=request_body['password'],
+                is_active=request_body['is_active'])
+    
+    db.session.add(user)
+    db.session.commit()
+
+
+    response_body = {
+       "results": 'User Created'
+    }
+    return jsonify(response_body), 200
+
+
+@app.route('/users/<int:user_id>/favoritos/', methods=['DELETE'])
+def del_favorito(user_id ):
+
+    body = request.get_json(force=True)
+    
+    if body["characters_id"] is None:
+        favorito_query= Favorite.query.filter_by(user_id=user_id).filter_by(planets_id=body["planets_id"]).first()
+    
+    else:
+        favorito_query= Favorite.query.filter_by(user_id=user_id).filter_by(characters_id=body["characters_id"]).first()
+   
+    db.session.delete(favorito_query)
+    db.session.commit()
+
+    response_body = {
+        'msg':'ok',
+        "results": 'Favorito deleted'
     }
 
     return jsonify(response_body), 200

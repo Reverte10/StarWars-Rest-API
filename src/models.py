@@ -71,20 +71,36 @@ class Planet(db.Model):
             # "favorites": self.favorites
         }
     
-# class Favorites(db.Model):
-#     __tablename__ = 'favorites'
-#     id = db.Column(db.Integer, primary_key=True)
-#     favorites = db.Column(db.String(250))
-#     users_id = db.Column(db.Integer, db.ForeignKey ('users.id'), nullable=False)
-#     characters_id = db.Column(db.Integer, db.ForeignKey ('characters.id'), nullable=True)
-#     planets_id = db.Column(db.Integer, db.ForeignKey ('planets.id'), nullable=True)
-#     vehicles_id = db.Column(db.Integer, db.ForeignKey ('vehicles.id'), nullable=True)
+class Favorite(db.Model):
+    __tablename__ = 'favorites'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey ('user.id'), nullable=False)
+    characters_id = db.Column(db.Integer, db.ForeignKey ('characters.id'), nullable=True)
+    planets_id = db.Column(db.Integer, db.ForeignKey ('planets.id'), nullable=True)
 
-#     def __repr__(self):
-#         return '<Favorites %r>' % self.id
+    def __repr__(self):
+        return '<Favorite %r>' % self.id
 
-#     def serialize(self):
-#         return {
-#             "id": self.id,
-#             "favorites": self.favorites
-#         }
+def serialize(self):
+        character_query= Character.query.filter_by(id= self.characters_id).first()
+
+        if character_query is None:
+          character_resultado=  None
+        else:
+          character_resultado= character_query.serialize()['name']
+
+        planet_query= Planet.query.filter_by(id= self.planets_id).first()
+
+        if planet_query is None:
+          planet_resultado=  None
+        else:
+          planet_resultado= planet_query.serialize()['name']
+        
+
+        return {
+            "id": self.id,
+            "characters": character_resultado,
+            "planets": planet_resultado,
+            "user_id": self.user_id
+            # do not serialize the password, its a security breach // planet_query.serialize()['name'] // character_query.serialize()['name']
+        }
