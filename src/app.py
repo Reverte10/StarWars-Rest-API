@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Character, Planet, Favorite
+from models import db, User, Character, Planet, Favorito
 #from models import Person
 
 app = Flask(__name__)
@@ -36,65 +36,63 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-# ----endpoints---- :
+# --- ENDPOINTS ---
 
-@app.route('/user', methods=['GET'])
-def handle_hello():
+# ----------------------- GET -----------------------
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
-
-    return jsonify(response_body), 200
-
+# CHARACTERS
 
 @app.route('/characters', methods=['GET'])
-def get_characters():
+def get_all_characters():
+
     characters_query = Character.query.all()
     results = list(map(lambda item: item.serialize(), characters_query))
+
     response_body = {
-        "msg": "OK", 
-        "results": results
+       "results": results
     }
 
     return jsonify(response_body), 200
 
+@app.route('/characters/<int:character_id>', methods=['GET'])
+def get_one_characters(character_id):
 
-@app.route('/characters/<int:characters_id>', methods=['GET'])
-def get_one_characters(characters_id):
-    character_query = Character.query.filter_by(id=characters_id).first()
+    character_query = Character.query.filter_by(id=character_id).first()
+    
 
     response_body = {
-        "msg": "OK", 
-        "results": character_query.serialize()
+       "results": character_query.serialize()
     }
 
     return jsonify(response_body), 200
 
+# PLANETS
 
 @app.route('/planets', methods=['GET'])
-def get_planets():
+def get_all_planets():
+
     planets_query = Planet.query.all()
     results = list(map(lambda item: item.serialize(), planets_query))
+
     response_body = {
-        "msg": "OK", 
-        "results": results
+       "results": results
     }
 
     return jsonify(response_body), 200
 
+@app.route('/planets/<int:planet_id>', methods=['GET'])
+def get_one_planets(planet_id):
 
-@app.route('/planets/<int:planets_id>', methods=['GET'])
-def get_one_planets(planets_id):
-    planet_query = Planet.query.filter_by(id=planets_id).first()
+    planet_query = Planet.query.filter_by(id=planet_id).first()
+    
 
     response_body = {
-        "msg": "OK", 
-        "results": planet_query.serialize()
+       "results": planet_query.serialize()
     }
 
     return jsonify(response_body), 200
 
+# USERS
 
 @app.route('/users', methods=['GET'])
 def get_all_users():
@@ -108,30 +106,36 @@ def get_all_users():
 
     return jsonify(response_body), 200
 
-
 @app.route('/users/<int:user_id>/favoritos', methods=['GET'])
 def get_favoritos(user_id):
 
-    favorito_query = Favorite.query.filter_by(id=user_id).first()
-    
+    # UN FAVORITO
+
+    favorito_query = Favorito.query.filter_by(user_id=user_id).first()
+
     response_body = {
        "results": favorito_query.serialize()
     }
-
+    
     return jsonify(response_body), 200
 
+
+# ----------------------- POST -----------------------
+# FAVORITOS 
 
 @app.route('/users/<int:user_id>/favoritos/', methods=['POST'])
 def add_favorito(user_id):
 
     request_body = request.get_json(force=True)
 
-    favorito = Favorite(characters_id= request_body['characters_id'],
+    favorito = Favorito(characters_id= request_body['characters_id'],
                         planets_id= request_body['planets_id'],
                         user_id= user_id)
+    
 
     db.session.add(favorito)
     db.session.commit()
+
 
     response_body = {
         'msg':'ok',
@@ -140,6 +144,9 @@ def add_favorito(user_id):
 
     return jsonify(response_body), 200
 
+
+
+# USERS
 
 @app.route('/users', methods=['POST'])
 def create_user():
@@ -157,8 +164,10 @@ def create_user():
     response_body = {
        "results": 'User Created'
     }
+
     return jsonify(response_body), 200
 
+# ----------------------- DELETE -----------------------
 
 @app.route('/users/<int:user_id>/favoritos/', methods=['DELETE'])
 def del_favorito(user_id ):
@@ -166,13 +175,15 @@ def del_favorito(user_id ):
     body = request.get_json(force=True)
     
     if body["characters_id"] is None:
-        favorito_query= Favorite.query.filter_by(user_id=user_id).filter_by(planets_id=body["planets_id"]).first()
+        favorito_query= Favorito.query.filter_by(user_id=user_id).filter_by(planets_id=body["planets_id"]).first()
     
     else:
-        favorito_query= Favorite.query.filter_by(user_id=user_id).filter_by(characters_id=body["characters_id"]).first()
+        favorito_query= Favorito.query.filter_by(user_id=user_id).filter_by(characters_id=body["characters_id"]).first()
    
+
     db.session.delete(favorito_query)
     db.session.commit()
+
 
     response_body = {
         'msg':'ok',
@@ -181,8 +192,25 @@ def del_favorito(user_id ):
 
     return jsonify(response_body), 200
 
+# ----------------------- PUT -----------------------
 
-# ----fin endpoints---- :
+@app.route('/users/<int:user_id>', methods=['PUT', 'GET'])
+def get_single_user(user_id):
+
+    body = request.get_json(force=True) #{ 'username': 'new_username'}
+    if request.method == 'PUT':
+        user1 = User.query.get(user_id)
+        user1.email = body["email"]
+        db.session.commit()
+        return jsonify(user1.serialize()), 200
+    if request.method == 'GET':
+        user1 = User.query.get(user_id)
+        return jsonify(user1.serialize()), 200
+
+    return "Invalid Method", 404
+
+# --- FIN ENDPOINTS ---
+
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
