@@ -58,7 +58,8 @@ def get_all_characters():
 def get_one_characters(character_id):
 
     character_query = Character.query.filter_by(id=character_id).first()
-    
+    if character_query is None:
+        return jsonify({"msg":"Character not found"}),404
 
     response_body = {
        "results": character_query.serialize()
@@ -84,7 +85,8 @@ def get_all_planets():
 def get_one_planets(planet_id):
 
     planet_query = Planet.query.filter_by(id=planet_id).first()
-    
+    if planet_query is None:
+        return jsonify({"msg":"Planet not found"}),404
 
     response_body = {
        "results": planet_query.serialize()
